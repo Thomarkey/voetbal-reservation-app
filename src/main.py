@@ -9,7 +9,7 @@ LOCATION_ID = 96  # 2020
 SPORT_ID = 1053  # voetbal
 DAYS_AHEAD = 30
 START_HOUR = 19
-AMOUNT_OF_SLOTS = 2  # minstens 1uur
+AMOUNT_OF_SLOTS = 2  #  slot=30min
 
 
 def get_timestamp(dt):
