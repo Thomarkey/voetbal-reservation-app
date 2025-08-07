@@ -52,7 +52,7 @@
       </profile-state>
     </entry>
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.14 (voetbal-reservation-app)" project-jdk-type="Python SDK">
+  <component name="ProjectRootManager" version="2" default="true">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>
