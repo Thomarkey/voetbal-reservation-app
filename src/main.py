@@ -5,10 +5,11 @@ import requests
 from dateutil import tz
 
 FIELD_NAME = "voetbalveld 6 (1/2"
-LOCATION_ID = 96
-SPORT_ID = 1053
-START_HOUR = 19
+LOCATION_ID = 96  # 2020
+SPORT_ID = 1053  # voetbal
 DAYS_AHEAD = 30
+START_HOUR = 19
+AMOUNT_OF_SLOTS = 2  # minstens 1uur
 
 
 def get_timestamp(dt):
@@ -19,7 +20,7 @@ def check_availability():
     results = []
     for day_offset in range(DAYS_AHEAD):
         date = datetime.now() + timedelta(days=day_offset)
-        if date.weekday() in (5, 6):  # 5 = Saturday, 6 = Sunday
+        if date.weekday() in (5, 6):
             continue
         day_start = datetime.combine(date.date(), time(0, 0)).astimezone(tz.tzlocal())
         day_end = datetime.combine(date.date(), time(23, 59)).astimezone(tz.tzlocal())
@@ -34,10 +35,24 @@ def check_availability():
             fields = data.get("data", [])
             matching_fields = [f for f in fields if FIELD_NAME.lower() in f["fieldName"].lower()]
             for field in matching_fields:
-                for slot in field["slots"]:
-                    slot_from = datetime.fromtimestamp(slot["from"] / 1000).astimezone(tz.tzlocal())
-                    slot_until = datetime.fromtimestamp(slot["until"] / 1000).astimezone(tz.tzlocal())
-                    if slot_from.hour >= START_HOUR and slot["available"]:
+                slots = [
+                    slot for slot in field["slots"]
+                    if datetime.fromtimestamp(slot["from"] / 1000).hour >= START_HOUR and slot["available"]
+                ]
+                # Find runs of AMOUNT_OF_SLOTS consecutive available slots
+                for i in range(len(slots) - AMOUNT_OF_SLOTS + 1):
+                    consecutive = True
+                    for j in range(AMOUNT_OF_SLOTS - 1):
+                        slot_until = datetime.fromtimestamp(slots[i + j]["until"] / 1000).astimezone(tz.tzlocal())
+                        slot_from_next = datetime.fromtimestamp(slots[i + j + 1]["from"] / 1000).astimezone(
+                            tz.tzlocal())
+                        if slot_until != slot_from_next:
+                            consecutive = False
+                            break
+                    if consecutive:
+                        slot_from = datetime.fromtimestamp(slots[i]["from"] / 1000).astimezone(tz.tzlocal())
+                        slot_until = datetime.fromtimestamp(slots[i + AMOUNT_OF_SLOTS - 1]["until"] / 1000).astimezone(
+                            tz.tzlocal())
                         results.append([
                             date.strftime('%A'),
                             date.strftime('%d-%m-%Y'),
@@ -45,8 +60,8 @@ def check_availability():
                             slot_from.strftime("%H:%M"),
                             slot_until.strftime("%H:%M")
                         ])
-        except Exception as e:
-            pass  # Optionally log errors
+        except Exception:
+            pass
 
     with open('resultaat.csv', 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
